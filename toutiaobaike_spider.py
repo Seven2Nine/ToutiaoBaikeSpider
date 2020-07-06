@@ -215,7 +215,6 @@ class ToutiaoSpider:
         new_datalist = []
         for data in datalist:
             new_data = {
-                "country": data.get("国籍"),
                 "description": data.get("description"),
                 "icon_path": data.get("picture_path")[0] if data.get("picture_path") else None,
                 "name": data.get("name"),
@@ -233,10 +232,10 @@ class ToutiaoSpider:
 
 if __name__ == '__main__':
     start_time = time.time()
-    toutiao = ToutiaoSpider("李强")  # 初始化类，传入要爬取信息的词条
+    toutiao = ToutiaoSpider("python")  # 初始化类，传入要爬取信息的词条
     data_list = toutiao.get_all_data(50)  # 获取爬取列表（词条存在同名情况） 参数为要获取的数量
     if not data_list:
         print("词条不存在")
     else:
         new_data_list = toutiao.data_handle4show(toutiao.data_handle4save(data_list))
-        print(json.dumps(new_data_list, ensure_ascii=False))
+        print(json.dumps(new_data_list, ensure_ascii=False, indent=2))
