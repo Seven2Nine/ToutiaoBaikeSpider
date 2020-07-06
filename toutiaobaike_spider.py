@@ -126,6 +126,7 @@ class ToutiaoSpider:
         item_data.pop("name")
         item_data.pop("title")
         item_data.pop("baike_id")
+        item_data.pop("nick_name")
         item_data.pop("description")
         item_data.pop("picture_paths")
         item_data.pop("relationship")
