@@ -3,7 +3,14 @@
 异步主要针对单个词语对应多个词条的情况，比如李强，王伟这种词
 
 ## 使用方式
-直接运行 toutiaobaike_spider.py 文件,会在控制台打印该词条信息
+
+安装依赖  
+
+> pip install requests  
+  pip install aiohttp
+
+运行 toutiaobaike_spider.py 文件,会在控制台打印该词条信息  
+
 > python toutiaobaike_spider.py
 
 ## 返回示例1
