@@ -28,11 +28,10 @@
       "//p6-bk.byteimg.com/tos-cn-i-mlhdmxsy5m/5c031fd1114041f79c28030c418e30ff~tplv-mlhdmxsy5m-q75:0:0.image"
     ],
     "nick_name": "python",
-    "source": null,
+    "source": "https://www.baike.com/wiki/python/250012",
     "relationship": null,
     "title": null,
     "property_data": {
-      "nick_name": "python",
       "外文名": "Python",
       "发明者": "Guido van Rossum",
       "设计者": "Guido van Rossum",
@@ -63,7 +62,7 @@
       "//p6-bk.byteimg.com/tos-cn-i-mlhdmxsy5m/e142539fca8c416f88c51aa4298d952f~tplv-mlhdmxsy5m-q75:0:0.image"
     ],
     "nick_name": null,
-    "source": null,
+    "source": "https://www.baike.com/wiki/六小龄童/248621",
     "relationship": [
       {
         "relationship": "妻子",
