@@ -220,7 +220,7 @@ class ToutiaoSpider:
                 "tag": data.get("tag"),
                 "picture_paths": data.get("picture_paths"),
                 "nick_name": data.get("nick_name"),
-                "source": data.get("URL"),
+                "source": data.get("url"),
                 "relationship": data.get("relationship"),
                 "title": data.get("title"),
                 "property_data": self.__get_attr(data),
