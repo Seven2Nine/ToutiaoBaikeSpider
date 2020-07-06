@@ -150,7 +150,6 @@ class ToutiaoSpider:
             # term_content, term_url = await self.__get_html(self._base_url + f"/{term_data.get('doc_id')}")
 
         loop.run_until_complete(asyncio.wait(tasks))  # 激活协程
-        loop.close()
         return self._datalist
 
     def data_handle4save(self, datalist):
