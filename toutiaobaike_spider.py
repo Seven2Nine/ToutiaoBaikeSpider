@@ -175,6 +175,7 @@ class ToutiaoSpider:
                 "picture_paths": [picture_url.get("img_uri") for picture_url in (imglist if imglist else [])]
             }
             # 判断有无别名,有的话添加
+            new_data.update({"nick_name": ""})
             if new_data.get("name") != data.get("term"):
                 new_data.update({"nick_name": data.get("term")})
 
