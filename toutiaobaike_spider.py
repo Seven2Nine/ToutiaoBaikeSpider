@@ -49,13 +49,15 @@ class ToutiaoSpider:
         term_main_data = json.loads(term_main_data)
         term_main_data = term_main_data[0] if isinstance(term_main_data, list) and len(term_main_data) > 0 else {}
         try:
-            term_main_data["content"]["Summary"] = json.loads(term_main_data.get("content").get("Summary"))
-            term_main_data["content"]["Content"] = json.loads(term_main_data.get("content").get("Content"))
-            term_main_data["content"]["InfoBox"] = json.loads(term_main_data.get("content").get("InfoBox"))
-        except json.decoder.JSONDecodeError:
-            term_main_data["content"]["Summary"] = {}
-            term_main_data["content"]["Content"] = []
-            term_main_data["content"]["InfoBox"] = []
+            term_main_data["WikiDoc"]['Abstract'] = json.loads(term_main_data.get('WikiDoc').get('Abstract'))
+            term_main_data["WikiDoc"]["Content"] = json.loads(term_main_data.get('WikiDoc').get("Content"))
+            term_main_data["WikiDoc"]['InfoBox'] = term_main_data.get('WikiDoc').get('InfoBox')
+            term_main_data["WikiDoc"]["UGCModule"] = term_main_data.get('WikiDoc').get("UGCModule")
+        except Exception as e:
+            term_main_data["WikiDoc"]['Abstract'] = {}
+            term_main_data["WikiDoc"]['UGCModule'] = {}
+            term_main_data["WikiDoc"]["Content"] = []
+            term_main_data["WikiDoc"]["InfoBox"] = []
         self._datalist.append({
             "term": self._term_name,
             "url": term_url.__str__(),
@@ -72,17 +74,15 @@ class ToutiaoSpider:
                     return await content
 
     def __start_spider(self, term):
-        """
-        开始函数
-        :param term: 词条名称
-        :return:
-        """
         terms_list = []
         base_url = f"https://www.baike.com/wiki/{term}"
         content, real_url = self.__get_html_single(base_url)
         main_datas = json.loads(content.split("data: ")[1].split("}</script>")[0])
         for main_data in main_datas:
-            terms_list = main_data.get("polyseme_list")
+            terms_list = main_data.get("WikiDoc").get('PolysemyList')
+        if terms_list is None:
+            terms_list = []
+            terms_list.append({"WikiDocID": ""})
         return terms_list
 
     @staticmethod
@@ -104,7 +104,7 @@ class ToutiaoSpider:
         :return:
         """
         for k, v in data.items():
-            if k == "text":
+            if k == "text" or k == "OriText":
                 text += v
             if isinstance(v, dict):
                 text = self.__get_all_text(v, text)
@@ -112,32 +112,28 @@ class ToutiaoSpider:
                 for i, value in enumerate(v):
                     if isinstance(value, dict):
                         text = self.__get_all_text(value, text)
+                    if isinstance(value, list):
+                        for j, value2 in enumerate(value):
+                            if isinstance(value2, dict):
+                                text = self.__get_all_text(value2, text)
         return text
 
-    @staticmethod
-    def __get_attr(item_data):
-        """
-        获得词条其它属性
-        :param item_data:
-        :return:
-        """
-        item_data.pop("url")
+    def __get_attr(self, item_data):
+        item_data.pop("URL")
         item_data.pop("tag")
         item_data.pop("name")
         item_data.pop("title")
         item_data.pop("baike_id")
-        item_data.pop("nick_name")
         item_data.pop("description")
         item_data.pop("picture_paths")
-        item_data.pop("relationship")
-
+        try:
+            item_data.pop("relationship")
+        except:
+            pass
         return item_data
 
     def get_all_data(self, size):
-        """
-        :param size: 同名词条取的数量
-        :return:
-        """
+        i = 0
         tasks = []
         terms_list = self.__start_spider(self._term_name)
         if not terms_list:
@@ -147,10 +143,11 @@ class ToutiaoSpider:
         asyncio.set_event_loop(new_loop)
         loop = asyncio.get_event_loop()  # 获取事件循环
         for i, term_data in zip(range(size), terms_list):
-            tasks.append(self.__get_content(self._base_url + f"/{term_data.get('doc_id')}"))
+            tasks.append(self.__get_content(self._base_url + f"/{term_data.get('WikiDocID')}"))
             # term_content, term_url = await self.__get_html(self._base_url + f"/{term_data.get('doc_id')}")
 
         loop.run_until_complete(asyncio.wait(tasks))  # 激活协程
+        loop.close()
         return self._datalist
 
     def data_handle4save(self, datalist):
@@ -161,48 +158,48 @@ class ToutiaoSpider:
         """
         new_datalist = []
         for data in datalist:
-            content = data.get("content")
-            imglist = content.get("module", {}).get("image", {}).get("data", {}).get("img_list")
-            relationship = content.get("ext_module", {}).get("relationship", {})
+            content = data.get("content").get("WikiDoc")
+            imglist = json.loads(content.get('UGCModule', {}).get("image", {}).get("Data", "{}")).get('image_list')
+            relationship = content.get('ModuleList', [])[0].get("Data", {}) if content.get('ModuleList', []) else {}
             new_data = {
-                "name": content.get("doc_title"),
-                "url": parse.unquote(data.get("url")),
-                "baike_id": content.get("doc_id"),
-                "title": content.get("attribute") if content.get("attribute") != content.get("doc_title") else None,
+                "name": content.get("Title"),
+                "URL": parse.unquote(data.get("url")),
+                "baike_id": content.get("WikiDocID"),
+                "title": content.get('Subtitle') if content.get('Subtitle') != content.get("Title") else None,
                 "description": self.__get_all_text(
-                    {"summary": content.get("content").get("Summary").get("summary_text")}, ""),
-                "tag": ",".join(content.get("category")),
-                "picture_paths": [picture_url.get("img_uri") for picture_url in (imglist if imglist else [])]
+                    {"summary": content.get('Abstract')}, ""),
+                "tag": ",".join(content.get('CategoryList')[0] if content.get('CategoryList') else []),
+                "picture_paths": [picture_url.get("uri") for picture_url in (imglist if imglist else [])]
             }
             # 判断有无别名,有的话添加
-            new_data.update({"nick_name": ""})
             if new_data.get("name") != data.get("term"):
                 new_data.update({"nick_name": data.get("term")})
 
             # 添加属性
-            for attribute in content.get("content").get("InfoBox"):
+            for attribute in content.get("InfoBox"):
                 try:
-                    new_data.update({attribute.get("name"): attribute.get("value")[0][0].get("text")})
-                except AttributeError:
+                    new_data.update({attribute.get("Name"): self.__get_all_text(attribute, "")})
+                except Exception:
                     try:
-                        new_data.update({attribute.get("name"): attribute.get("value")[0]})
+                        new_data.update({attribute.get("Name"): attribute.get("Value")[0].get("Value")})
                     except Exception as e:
                         print(f"词条{data.get('term')}的属性->{attribute}  不规范\n 错误信息：{e}")
             # 添加人物关系
             try:
-                relationships = json.loads(list(relationship.values())[0])
+                relationships = json.loads(relationship)
                 # relationships = json.loads(relationship)
                 new_relationship = []
                 for relationship in relationships:
                     new_relationship.append({
-                        "relationship": relationship.get("relationship"),
-                        "name": relationship.get("doc_title"),
-                        "baikeid": relationship.get("doc_id")
+                        "main": data.get("term"),
+                        "type": relationship.get("relationship"),
+                        "name": relationship.get("title"),
+                        "baikeid": relationship.get("wiki_doc_id")
                     })
                 new_data.update({"relationship": new_relationship})
-            except IndexError:
-                new_data.update({"relationship": None})
-                # print(f"该词条无人物关系")
+            except Exception:
+                pass
+                # print("该词条无人物关系")
             new_datalist.append(new_data)
 
         return new_datalist
